@@ -1,8 +1,13 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
+
 
 // -----------------------------------------------------------------------------
 // POLYNOMIAL
@@ -43,6 +48,8 @@ private:
 
 Polynomial * Polynomial::trivialMultiplication(const Polynomial & rPolynom)  {
 
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+
     float * result = new float[this->getDegree() + rPolynom.getDegree() + 1];
 
     for(int i = 0; i < this->getNumConstants(); i++) {
@@ -50,6 +57,11 @@ Polynomial * Polynomial::trivialMultiplication(const Polynomial & rPolynom)  {
             result[i + j] += constants[i] * rPolynom.getConstantAtIndex(j);
         }
     }
+
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+
+    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+    printf("Trivial algorithm duration: %f seconds\n", time_span.count());
 
     return new Polynomial(result, this->getDegree() + rPolynom.getDegree());
 }
@@ -65,21 +77,26 @@ Polynomial * Polynomial::karatsubaMultiplication(const Polynomial & rPolynom)  {
     float * left;
     float * right;
 
+    high_resolution_clock::time_point t1;
+    high_resolution_clock::time_point t2;
     float * result;
     if (realSize != this->getNumConstants()) {
         left = fillConstants(this->constants, realSize);
         right = fillConstants(rPolynom.getConstants(), realSize);
+
+        t1 = high_resolution_clock::now();
         result = karatsuba(left, right, realSize);
+        t2 = high_resolution_clock::now();
+
         delete [] left;
         delete [] right;
     } else {
+        t1 = high_resolution_clock::now();
         result = karatsuba(this->constants, rPolynom.getConstants(), this->getNumConstants());
+        t2 = high_resolution_clock::now();
     }
-
-    for (int i = 0; i < realSize*2; i++) {
-        cout << result[i] << " ";
-    }
-    cout << endl;
+    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+    printf("Kartasuba algorithm duration: %f seconds\n", time_span.count());
 
     return new Polynomial(result, realSize*2);
 }
@@ -224,17 +241,17 @@ Polynomial * getPolynomial(string coef, int degree) {
             constants[indexCoef] = stof(value);
             indexCoef++;
             value = "";
-        } else if(isdigit(coef[i]) || coef[i] == '.') {
+        } else if(isdigit(coef[i]) || coef[i] == '.' || coef[i] == '-') {
             value.push_back(coef[i]);
         } else {
             return nullptr;
         }
     }
 
-    for(int i = 0; i < degree + 1; i++) {
-        cout << constants[i] << " ";
-    }
-    cout << endl;
+//    for(int i = 0; i < degree + 1; i++) {
+//        cout << constants[i] << " ";
+//    }
+//    cout << endl;
 
     return new Polynomial(constants, degree);
 }
@@ -296,15 +313,15 @@ int main(int argc,  char **argv) {
 
     if(firstPolynomial == nullptr || secondPolynomial == nullptr) {
         cout << "Doesn't conform to our polynomial pattern." << endl;
+        return -1;
     }
 
-    cout << *firstPolynomial << endl;
-    cout << *secondPolynomial << endl;
+    Polynomial * resultTrivial = firstPolynomial->trivialMultiplication(*secondPolynomial);
+    Polynomial * resultKartasuba = firstPolynomial->karatsubaMultiplication(*secondPolynomial);
 
-    cout << *firstPolynomial->trivialMultiplication(*secondPolynomial) << endl;
-    cout << *firstPolynomial->karatsubaMultiplication(*secondPolynomial) << endl;
+    cout << *resultTrivial << endl;
+    cout << *resultKartasuba << endl;
 
     return 0;
 }
-
 
